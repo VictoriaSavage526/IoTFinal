@@ -3,7 +3,7 @@ from queue import Queue
 import time
 import json
 from cryptography.fernet import Fernet
-import webbrowser, urllib
+import webbrowser #, urllib
 
 
 # broker = 'broker.emqx.io'
@@ -30,7 +30,7 @@ def on_message(client, userdata, message):
     #time.sleep(1)
     global cipher, messageQ
     print("Receive Payload: ",message.payload)
-    decrypted_message = cipher.decrypt(message.payload)   #decrypted_message = cipher.decrypt(encrypted_message)
+    decrypted_message = cipher.decrypt(message.payload)
     decoded_message = str(decrypted_message.decode("utf-8"))
     print("\nreceived message =",decoded_message)
     messageQ.put(decoded_message)
@@ -56,10 +56,10 @@ def init_globals(cipher_, mQ):
     cipher = cipher_
     messageQ = mQ
 
-# def Publish(client, msg, topic):
-#     encrypted_message = cipher.encrypt(msg)
-#     out_message=encrypted_message.decode()
-#     client.publish(topic, out_message)
+def Publish(client, msg, topic, qos_=0):
+    encrypted_message = cipher.encrypt(msg.encode())
+    out_message=encrypted_message.decode()
+    client.publish(topic, out_message, qos=qos_)
 
 
 def client_loop(client, cipher):
