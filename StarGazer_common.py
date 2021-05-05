@@ -3,6 +3,7 @@ from queue import Queue
 import time
 import json
 from cryptography.fernet import Fernet
+import webbrowser, urllib
 
 
 # broker = 'broker.emqx.io'
@@ -48,6 +49,17 @@ def on_connect(client, userdata, flags, rc):
 def on_publish(client, userdata, mid):
     print("pub ack "+ str(mid))
     client.puback_flag=True
+
+
+def init_globals(cipher_, mQ):
+    global cipher, messageQ
+    cipher = cipher_
+    messageQ = mQ
+
+# def Publish(client, msg, topic):
+#     encrypted_message = cipher.encrypt(msg)
+#     out_message=encrypted_message.decode()
+#     client.publish(topic, out_message)
 
 
 def client_loop(client, cipher):

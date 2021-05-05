@@ -44,6 +44,7 @@ class GPS_read:
         self.long_direction = ""
         self.nmea_time = ""
         self.local_time = ""
+        self.utc_offset = 0
         self.knots = 0
         self.kph = 0
         self.mph = 0
@@ -95,7 +96,7 @@ class GPS_read:
         if 'GPGGA' in self.info_dict:
             gpgga = self.info_dict['GPGGA']
             self.nmea_time = get_str(gpgga[1])
-            self.local_time = nmea_time_string(self.nmea_time)
+            self.local_time, self.utc_offset = nmea_time_string(self.nmea_time)
             self.latitude = get_float(gpgga[2])
             self.lat_direction = get_str(gpgga[3])
             self.longitude = get_float(gpgga[4])
@@ -166,7 +167,7 @@ def nmea_time_string(nmea_time, h24=0):
             meridiem = ' AM'
         if hour==0:
             hour==12
-        return str(hour) +':'+ minute +':'+ seconds + meridiem +' ('+ timezone +')'
+        return str(hour) +':'+ minute +':'+ seconds + meridiem +' ('+ timezone +')', utc_offset
 
     
 def convert_to_degrees(raw_value):

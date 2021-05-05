@@ -4,20 +4,21 @@
 # import json
 # from queue import Queue
 
-# # broker = 'broker.emqx.io'
-# # broker="broker.hivemq.com"
-# broker = "test.mosquitto.org"
-# server_topic = "ECSE4660/StarGazer/Server"
-# client_topic = "ECSE4660/StarGazer/Client"
+# # BROKER = 'BROKER.emqx.io'
+# # BROKER="BROKER.hivemq.com"
+# BROKER = "test.mosquitto.org"
+# SERVER_TOPIC = "ECSE4660/StarGazer/Server"
+# CLIENT_TOPIC = "ECSE4660/StarGazer/Client"
 
 from StarGazer_common import *
 import GPS_reading as GPS
-import webbrowser
+
 
 
 url_received = ""
 messageQ = Queue()
-cipher = Fernet(cipher_key)
+cipher = Fernet(CIPHER_KEY)
+init_globals(cipher, messageQ)
 
 #define callback
 # def on_log(client, userdata, level, buf):
@@ -37,7 +38,7 @@ cipher = Fernet(cipher_key)
 #     #     msg = f'{lat} {longi}'.encode()
 #     #     encrypted_message = cipher.encrypt(msg)
 #     #     out_message=encrypted_message.decode()
-#     #     client.publish(client_topic, out_message)
+#     #     client.publish(CLIENT_TOPIC, out_message)
 
 # def on_subscribe(client, userdata, mid, granted_qos):   #create function for callback
 #     print("subscribed with qos",granted_qos," ",mid, "\n")
@@ -61,10 +62,10 @@ cipher = Fernet(cipher_key)
 #     if msg == "Send coordinates":
 
 
-def Publish(client, msg):
-    encrypted_message = cipher.encrypt(msg)
+def Publish(client, msg, qos=0):
+    encrypted_message = cipher.encrypt(msg.encode())
     out_message=encrypted_message.decode()
-    client.publish(client_topic, out_message)
+    client.publish(CLIENT_TOPIC, out_message, qos)
 
 
 def init_connection():
@@ -91,32 +92,39 @@ def main():
     ######
     client.on_message=on_message
     #####encryption
-    cipher_key =b'cb99hQ96hEpCxRO9O5_pHtaxJhtFEXaOhd4tcd_ak6s='
-    cipher = Fernet(cipher_key)
+    # cipher_key =b'cb99hQ96hEpCxRO9O5_pHtaxJhtFEXaOhd4tcd_ak6s='
+    # cipher = Fernet(cipher_key)
 
-    print("connecting to broker ",broker)
-    client.connect(broker)#connect
+    print("connecting to BROKER ",BROKER)
+    client.connect(BROKER)#connect
     # client.loop_start() #start loop to process received messages
     print("subscribing ")
-    client.subscribe(server_topic)#subscribe
+    client.subscribe(SERVER_TOPIC)#subscribe
+    time.sleep(5)
+
+    Publish(client, "send url", 1)
+    time.sleep(1)
+    
     # client.loop_start()
     try:
         while True:
             client.loop() # client_loop()
             if not messageQ.empty():
                 msg = messageQ.get()
-                if msg == "Send Coordinates":
+                if msg == "send coordinates and timezone":
+                    print("getting gps info")
                     gps.read_cycle()
-                    Publish(client, gps.position)
+                    print(gps.position)
+                    Publish(client, "coordinates " + gps.position +" {:03}".format(gps.utc_offset))
 
                 elif 'URL' in msg:
                     url_received = msg.split()[1]
                     time.sleep(1)
                     print()
                     action = input("Do you want to open the URL? (y/n): ")
-                        if action.lower() == 'y':
-                            webbrowser.open(url_received)
-                            time.sleep(10)
+                    if action.lower() == 'y':
+                        webbrowser.open(url_received)
+                        time.sleep(10)
 
             
 
@@ -128,7 +136,7 @@ def main():
     #     count+=1
 
     # client.disconnect() #disconnect
-    # client.loop_stop() #stop loop
+        # client.loop_stop() #stop loop
 
 
 if __name__ == "__main__":
