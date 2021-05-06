@@ -2,13 +2,14 @@ from StarGazer_common import *
 import GPS_reading as GPS
 
 
-url_received = ""
+# url_received = ""
 messageQ = Queue()
 cipher = Fernet(CIPHER_KEY)
 init_globals(cipher, messageQ)
 
 
 def main():
+    url_received = ""
     last_gps = None
     gps = GPS.GPS_read()
 
@@ -33,6 +34,7 @@ def main():
     
     # client.loop_start()
     try:
+        count=0
         while True:
             client.loop()
             if not messageQ.empty():
@@ -50,7 +52,26 @@ def main():
                     action = input("Do you want to open the URL? (y/n): ")
                     if action.lower() == 'y':
                         webbrowser.open(url_received)
-                        time.sleep(10)
+                        time.sleep(5)
+
+            else:
+                if count % 10 ==0:
+                    gps.read_cycle()
+
+                    lat = gps.lat_degrees
+                    longi = gps.long_degrees
+                    print("Current GPS reading:")
+                    
+                    print("Time", gps.local_time, " Satellites seen:", gps.num_satellites)
+                    print("Latitude in degrees:", lat," Longitude in degree:", longi, " Altitude in meters:", gps.altitude)
+                    print("Speed over ground:",gps.knots,"knots","Course over ground:",gps.course,"degrees")
+                    print("------------------------------------------------------------\n")
+                
+                    if not url_received:
+                        Publish(client, "send url", CLIENT_TOPIC, 1)
+                # elif count %
+                count+=1
+                time.sleep(1)
             
     except KeyboardInterrupt:
         client.disconnect()

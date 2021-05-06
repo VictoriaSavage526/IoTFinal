@@ -19,6 +19,9 @@ class GPS_read:
             self.elevation = elv
             self.azimuth = az
             self.SNR = snr
+        
+        def __str__(self):
+            return "PRN {}, Slope {} degrees, Azimuth {} degress, SNR {} dB".format(self.PRN, self.elevation, self.azimuth, self.SNR)
 
 
 
@@ -92,6 +95,11 @@ class GPS_read:
         # for line in self.info_dict:
         #     print(line, self.info_dict[line])
 
+    def print_satellites(self):
+        print("Satellites in View (%d)"%len(self.satellites))
+        for prn, sat in self.satellites.items():
+            print(sat)
+
     def update(self):
         if 'GPGGA' in self.info_dict:
             gpgga = self.info_dict['GPGGA']
@@ -119,9 +127,14 @@ class GPS_read:
             self.nmea_date = get_str(gprmc[9])
         if 'GPGSV' in self.info_dict:
             gpgsv = self.info_dict['GPGSV']
+            self.satellites = dict()
             for msg in gpgsv:
-                # parse info, create satellite, add to dictionart
-                pass
+                # parse info, create satellite, add to dictionary
+                if len(msg) >4: msg = msg[4:]
+                for i in range(int(len(msg)/4)):
+                    j=i*4
+                    self.satellites[msg[i]] = self.Satellite(msg[j], msg[j+1], msg[j+2], msg[j+3])
+                
 
 
 
@@ -216,14 +229,15 @@ def main():
             longi = gps.long_degrees
             print("Current GPS reading:")
             
-            print("Time", gps.local_time, " Satellites seen:", gps.num_satellites)
+            print("Time", gps.local_time, " Satellites in use:", gps.num_satellites)
             print("Latitude in degrees:", lat," Longitude in degree:", longi, " Altitude in meters:", gps.altitude)
             print("Speed over ground:",gps.knots,"knots","Course over ground:",gps.course,"degrees")
             map_link = 'http://maps.google.com/?q=' + lat + ',' + longi  #create link to plot location on Google map
             print("\n<<<<<<<<press ctrl+c for link to plot location on google maps>>>>>>")               #press ctrl+c to plot on map and exit 
             print("------------------------------------------------------------\n")
             gps.print_cycle()
-            time.sleep(5)
+            gps.print_satellites()
+            time.sleep(15)
                             
     except KeyboardInterrupt:
         # ser.close()
